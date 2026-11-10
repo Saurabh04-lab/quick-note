@@ -1,33 +1,115 @@
 
-# Quick Note 📝
+# 📝 Quick Note 2.0
 
-A clean, responsive, full-stack note-taking application built with Node.js, Express.js, HTML, CSS and JavaScript.
+### Your Space. Your Thoughts.
 
-Quick Note provides a simple personal workspace where users can create, view, edit, search and delete notes through asynchronous REST API requests.
+Quick Note is a full-stack, multi-user note-taking application built with Node.js, Express.js, PostgreSQL, HTML, CSS and JavaScript.
+
+It provides users with individual private workspaces where they can securely create, view, edit, search and delete their personal notes.
+
+Users can register, log in and access their notes from any supported device.
+
+---
+
+## 🌐 Live Application
+
+**Live Website:** https://quick-note-tifz.onrender.com
+
+**GitHub Repository:** https://github.com/Saurabh04-lab/quick-note
+
+---
 
 ## ✨ Features
 
-- **Create Notes:** Write and save notes with a title and content.
-- **View Notes:** Open individual notes in a dedicated read-only viewing space.
-- **Edit Notes:** Update previously saved notes.
-- **Delete Notes:** Remove unwanted notes with confirmation.
-- **Search Notes:** Find notes using their titles or content.
-- **Persistent Local Storage:** Store notes in a local JSON file.
-- **Responsive Interface:** Access the application on desktop, tablet and mobile.
-- **Live Updates:** Interact with the backend asynchronously using Fetch API.
-- **Input Validation:** Validate note titles and content on the backend.
+### 🔐 User Authentication
+- User registration with email and password.
+- Secure password hashing using bcrypt.
+- Session-based authentication.
+- Persistent login sessions stored in PostgreSQL.
+- Secure logout functionality.
+- Protected application dashboard.
+
+### 📒 Personal Note Management
+- Create notes with a title and content.
+- View individual notes in a dedicated read-only space.
+- Edit existing notes.
+- Delete notes with confirmation.
+- Search notes by title or content.
+- Display note creation and last-update timestamps.
+- Responsive note cards.
+
+### 🔒 Privacy and Security
+- Separate workspace for every registered user.
+- Server-side note ownership verification.
+- Passwords stored as hashes.
+- HTTP-only session cookies.
+- Secure cookies in production.
+- Authentication rate limiting.
+- Security headers using Helmet.
+- Cross-origin request origin validation.
+- PostgreSQL-backed session storage.
+
+### 📱 Responsive Design
+- Desktop-friendly interface.
+- Mobile-responsive layout.
+- Clean purple-and-white visual theme.
+- Simple navigation and note management.
+
+---
 
 ## 🛠️ Technology Stack
 
 | Technology | Purpose |
 |---|---|
-| HTML5 | Application structure |
-| CSS3 | Styling and responsive layout |
-| JavaScript | Frontend functionality |
+| HTML5 | Frontend structure |
+| CSS3 | Styling and responsive design |
+| JavaScript | Frontend application logic |
 | Node.js | Backend runtime |
-| Express.js | REST API framework |
-| JSON | Local note storage |
-| Fetch API | Asynchronous HTTP requests |
+| Express.js | REST API and server |
+| PostgreSQL | Persistent relational database |
+| Neon | Hosted PostgreSQL database |
+| pg | PostgreSQL database driver |
+| bcryptjs | Password hashing |
+| express-session | User session management |
+| connect-pg-simple | PostgreSQL session storage |
+| Helmet | HTTP security headers |
+| express-rate-limit | Authentication rate limiting |
+| Fetch API | Asynchronous frontend communication |
+| Git and GitHub | Version control |
+| Render | Application deployment |
+
+---
+
+## 🏗️ Application Architecture
+
+```text
+                 QUICK NOTE 2.0
+                        |
+          +-------------+-------------+
+          |                           |
+      Frontend                    Backend
+   HTML/CSS/JavaScript          Node.js/Express
+          |                           |
+       Fetch API              Authentication API
+          |                           |
+          +-------------+-------------+
+                        |
+                  PostgreSQL
+                        |
+             +----------+----------+
+             |                     |
+          Users                 Notes
+             |                     |
+         Account ID --------> Owner ID
+```
+
+Every note is associated with its owner's user ID.
+
+The backend checks ownership during note retrieval, modification and deletion.
+
+This prevents users from accessing or modifying another user's notes through the API.
+
+---
 
 ## 📁 Project Structure
 
@@ -36,35 +118,48 @@ quick-note/
 │
 ├── backend/
 │   ├── routes/
+│   │   ├── auth.js
 │   │   └── notes.js
+│   │
+│   ├── scripts/
+│   │   └── migrate-json-notes.js
+│   │
+│   ├── db.js
 │   └── server.js
-│
-├── data/
-│   └── notes.json
 │
 ├── frontend/
 │   ├── index.html
 │   ├── style.css
 │   └── script.js
 │
+├── data/
+│   └── notes.json
+│
+├── .env.example
 ├── .gitignore
 ├── package.json
 ├── package-lock.json
 └── README.md
 ```
 
-## ⚙️ Installation and Setup
+The local JSON file is retained only for legacy note migration and is excluded from Git.
+
+---
+
+## ⚙️ Local Installation
 
 ### Prerequisites
 
-- Node.js 18 or later
-- npm
-- Git
+- Node.js 20 or later.
+- npm.
+- Git.
+- A PostgreSQL database.
+- A Neon account or another compatible PostgreSQL provider.
 
 ### 1. Clone the repository
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
+git clone https://github.com/Saurabh04-lab/quick-note.git
 ```
 
 ### 2. Navigate to the project
@@ -79,58 +174,161 @@ cd quick-note
 npm install
 ```
 
-### 4. Start the application
+### 4. Configure environment variables
+
+Create a `.env` file in the project root.
+
+```env
+NODE_ENV=development
+PORT=3001
+
+DATABASE_URL=YOUR_POSTGRESQL_CONNECTION_STRING
+
+SESSION_SECRET=YOUR_RANDOM_SECRET_OF_AT_LEAST_32_BYTES
+```
+
+Generate a secure session secret:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+Never commit `.env` or expose database credentials.
+
+### 5. Start the application
 
 ```bash
 npm start
 ```
 
-### 5. Open the application
+For development with automatic Node.js restarts:
 
-Visit:
+```bash
+npm run dev
+```
 
-http://localhost:3001
-
-## 🔗 REST API Documentation
-
-Base URL:
+### 6. Open the application
 
 ```text
 http://localhost:3001
 ```
 
-### 1. Get All Notes
+---
 
-```http
-GET /notes
+## 🔗 REST API Documentation
+
+### Authentication API
+
+Base path:
+
+```text
+/api/auth
 ```
 
-Returns all saved notes.
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/auth/me` | Check current login session |
+| POST | `/api/auth/register` | Register a new account |
+| POST | `/api/auth/login` | Authenticate a user |
+| POST | `/api/auth/logout` | End the current session |
 
-### 2. Create a Note
+#### Register
+
+```http
+POST /api/auth/register
+Content-Type: application/json
+```
+
+Request:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
+}
+```
+
+#### Login
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+```
+
+Request:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
+}
+```
+
+#### Check Session
+
+```http
+GET /api/auth/me
+```
+
+Authenticated response:
+
+```json
+{
+  "authenticated": true,
+  "user": {
+    "id": "user-uuid",
+    "email": "user@example.com"
+  }
+}
+```
+
+#### Logout
+
+```http
+POST /api/auth/logout
+```
+
+### Notes API
+
+Base path:
+
+```text
+/notes
+```
+
+All note endpoints require an authenticated session.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/notes` | Retrieve the current user's notes |
+| POST | `/notes` | Create a note |
+| PUT | `/notes/:id` | Update an owned note |
+| DELETE | `/notes/:id` | Delete an owned note |
+
+#### Create Note
 
 ```http
 POST /notes
 Content-Type: application/json
 ```
 
-Request body:
+Request:
 
 ```json
 {
   "title": "My First Note",
-  "content": "This is my first Quick Note."
+  "content": "Welcome to my private workspace."
 }
 ```
 
-### 3. Update a Note
+#### Update Note
 
 ```http
 PUT /notes/:id
 Content-Type: application/json
 ```
 
-Request body:
+Request:
 
 ```json
 {
@@ -139,76 +337,210 @@ Request body:
 }
 ```
 
-### 4. Delete a Note
+#### Delete Note
 
 ```http
 DELETE /notes/:id
 ```
 
-Deletes the note with the specified ID.
-
-### 5. Health Check
+#### Health Check
 
 ```http
 GET /api/health
 ```
 
-Checks whether the backend server is running.
-
-## 📦 API Response Example
-
-```json
-{
-  "id": "unique-note-id",
-  "title": "My First Note",
-  "content": "Quick Note is working!",
-  "createdAt": "2026-11-10T08:00:00.000Z",
-  "updatedAt": "2026-11-10T08:00:00.000Z"
-}
-```
-
-## 🧪 Testing
-
-The application has been tested locally for:
-
-- Creating notes using POST.
-- Retrieving notes using GET.
-- Updating notes using PUT.
-- Deleting notes using DELETE.
-- Persisting notes in JSON storage.
-- Frontend and backend integration.
-- Individual read-only note viewing.
-- Note searching and responsive presentation.
-
-## 🔒 Data Storage
-
-The current development version uses a local JSON file.
-
-The personal notes file is excluded from Git through `.gitignore`.
-
-A persistent hosted database will be configured before production deployment.
-
-## 🚀 Deployment
-
-Deployment preparation is planned using a suitable hosting platform for the Node.js backend and persistent database.
-
-The live application URL will be added here after deployment.
-
-## 🎯 Project Objective
-
-This project demonstrates full-stack web development fundamentals, including:
-
-- RESTful API design.
-- CRUD operations.
-- Client-server communication.
-- Asynchronous JavaScript.
-- JSON-based data persistence.
-- Responsive frontend development.
-
-## 👨‍💻 Author
-
-Developed as a full-stack web development project.
+Checks application and PostgreSQL connectivity.
 
 ---
 
-**Quick Note — Your Space. Your Thoughts.**
+## 🗄️ Database Design
+
+### Users Table
+
+Stores registered user accounts.
+
+| Column | Description |
+|---|---|
+| id | Unique user UUID |
+| email | Unique account email |
+| password_hash | Hashed password |
+| created_at | Account creation timestamp |
+
+### Notes Table
+
+Stores individual user notes.
+
+| Column | Description |
+|---|---|
+| id | Unique note UUID |
+| owner_id | Associated user UUID |
+| title | Note title |
+| content | Note content |
+| created_at | Creation timestamp |
+| updated_at | Last modification timestamp |
+
+The `owner_id` foreign key references `users.id` and uses `ON DELETE CASCADE`.
+
+### Session Storage
+
+Login sessions are stored in PostgreSQL using `connect-pg-simple`.
+
+This avoids relying on Express's in-memory session store.
+
+---
+
+## 🧪 Testing and Verification
+
+The application has undergone manual verification of:
+
+- User registration.
+- User login.
+- Session restoration.
+- User logout.
+- Creating notes.
+- Retrieving notes.
+- Editing notes.
+- Deleting notes.
+- Individual read-only note viewing.
+- Note searching.
+- PostgreSQL connectivity.
+- Two-user workspace isolation.
+- Rejection of unauthenticated note requests.
+- Cross-user note deletion protection.
+
+### Example HTTP security responses
+
+| Scenario | Expected response |
+|---|---|
+| Unauthenticated notes request | 401 Unauthorized |
+| Access another user's note | 404 Not Found |
+| Delete another user's note | 404 Not Found |
+| Invalid request origin | 403 Forbidden |
+| Successful note creation | 201 Created |
+
+---
+
+## 📦 Legacy Data Migration
+
+The original application used a local JSON file.
+
+A migration script is available at:
+
+```text
+backend/scripts/migrate-json-notes.js
+```
+
+Preview existing notes:
+
+```bash
+node backend/scripts/migrate-json-notes.js --preview
+```
+
+Set the destination account:
+
+```powershell
+$env:MIGRATE_OWNER_EMAIL = "your-email@example.com"
+```
+
+Import selected records:
+
+```bash
+node backend/scripts/migrate-json-notes.js --import --ids "NOTE_ID_1,NOTE_ID_2"
+```
+
+The migration script records completed imports to prevent duplication.
+
+Keep a backup of legacy JSON data until migration is verified.
+
+---
+
+## 🚀 Deployment
+
+### Hosting Architecture
+
+| Component | Platform |
+|---|---|
+| Application hosting | Render |
+| PostgreSQL database | Neon |
+| Source code | GitHub |
+
+### Render Configuration
+
+Build command:
+
+```bash
+npm ci
+```
+
+Start command:
+
+```bash
+npm start
+```
+
+Health check path:
+
+```text
+/api/health
+```
+
+### Production Environment Variables
+
+Configure the following in the Render dashboard:
+
+```env
+NODE_ENV=production
+DATABASE_URL=YOUR_NEON_DATABASE_URL
+SESSION_SECRET=YOUR_PRODUCTION_SECRET
+APP_ORIGIN=https://your-render-service.onrender.com
+```
+
+Do not commit production credentials to GitHub.
+
+---
+
+## 🔐 Security and Privacy
+
+Quick Note uses server-side authentication and PostgreSQL-backed sessions.
+
+Notes are retrieved, updated and deleted using the authenticated user's ID.
+
+The application does not rely on frontend filtering alone for privacy.
+
+Passwords are hashed before storage.
+
+Environment secrets are maintained separately from source code.
+
+---
+
+## 🎯 Project Objective
+
+Quick Note demonstrates full-stack web development concepts through the implementation of:
+
+- RESTful API architecture.
+- Complete CRUD operations.
+- Multi-user authentication.
+- Private user workspaces.
+- PostgreSQL relational data storage.
+- Server-side authorization.
+- Asynchronous JavaScript Fetch API.
+- Responsive web development.
+- Cloud deployment.
+
+---
+
+## 👨‍💻 Author
+
+**Saurabh Mehta**
+
+GitHub:
+
+https://github.com/Saurabh04-lab
+
+Project Repository:
+
+https://github.com/Saurabh04-lab/quick-note
+
+---
+
+**Quick Note 2.0 — Your Space. Your Thoughts.**
