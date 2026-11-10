@@ -22,6 +22,38 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 const production = process.env.NODE_ENV === "production";
 
+// REMOVE CHATGPT TRACKING PARAMETER PERMANENTLY
+app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+        return next();
+    }
+
+    try {
+        const url = new URL(req.originalUrl, "http://localhost");
+
+        let changed = false;
+
+        for (const key of [...url.searchParams.keys()]) {
+            if (key.toLowerCase() === "utm_source") {
+                url.searchParams.delete(key);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            const cleanUrl = url.pathname + url.search;
+
+            return res.redirect(308, cleanUrl);
+        }
+
+        next();
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+// PRODUCTION CONFIGURATION
 if (
     !process.env.SESSION_SECRET ||
     Buffer.byteLength(process.env.SESSION_SECRET, "utf8") < 32
@@ -37,8 +69,13 @@ if (production) {
     try {
         const parsed = new URL(process.env.APP_ORIGIN);
 
-        if (parsed.protocol !== "https:" || parsed.origin !== process.env.APP_ORIGIN) {
-            throw new Error("APP_ORIGIN must be an HTTPS origin without a trailing path.");
+        if (
+            parsed.protocol !== "https:" ||
+            parsed.origin !== process.env.APP_ORIGIN
+        ) {
+            throw new Error(
+                "APP_ORIGIN must be an HTTPS origin without a trailing path."
+            );
         }
     } catch (error) {
         throw new Error(`Invalid APP_ORIGIN: ${error.message}`);
@@ -66,12 +103,13 @@ app.use(helmet({
 
 // REQUEST BODY
 app.use(express.json({ limit: "100kb" }));
+
 app.use(express.urlencoded({
     extended: false,
     limit: "100kb"
 }));
 
-// DISABLE CACHING OF PRIVATE APPLICATION DATA
+// PRIVATE DATA CACHE CONTROL
 app.use(["/api/auth", "/notes"], (req, res, next) => {
     res.setHeader("Cache-Control", "private, no-store");
     next();
@@ -81,7 +119,6 @@ app.use(["/api/auth", "/notes"], (req, res, next) => {
 app.use(sessionMiddleware);
 
 // CSRF ORIGIN CHECK
-// Browser state-changing requests must originate from our application.
 app.use((req, res, next) => {
     const safeMethods = ["GET", "HEAD", "OPTIONS"];
 
@@ -91,7 +128,6 @@ app.use((req, res, next) => {
 
     const origin = req.get("Origin");
 
-    // Non-browser tools such as PowerShell may omit Origin.
     if (!origin) {
         return next();
     }
@@ -116,8 +152,10 @@ app.use((req, res, next) => {
     }
 });
 
-// API ROUTES
+// AUTHENTICATION API
 app.use("/api/auth", authRouter);
+
+// NOTES API
 app.use("/notes", notesRouter);
 
 // HEALTH CHECK
@@ -146,7 +184,10 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 
 // API 404
 app.use((req, res, next) => {
-    if (req.path.startsWith("/api/") || req.path.startsWith("/notes")) {
+    if (
+        req.path.startsWith("/api/") ||
+        req.path.startsWith("/notes")
+    ) {
         return res.status(404).json({
             error: "API endpoint not found."
         });
@@ -193,6 +234,7 @@ async function startServer() {
             console.log("PostgreSQL connected.");
             console.log("Authentication enabled.");
             console.log("Private note workspaces enabled.");
+            console.log("Tracking parameter cleanup enabled.");
             console.log("--------------------------------");
         });
 
