@@ -4,201 +4,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Quick Note - Your personal space to create, organize and manage notes.">
-
-    <title>Quick Note | Your Personal Workspace</title>
-
+    <meta name="description" content="Quick Note - Your private personal workspace.">
+    <title>Quick Note | Private Workspace</title>
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
 
 <body>
 
-    <!-- Navigation -->
-    <header class="navbar">
-        <a href="/" class="brand">
+    <!-- AUTHENTICATION -->
+    <section id="auth-screen" class="auth-screen">
+        <div class="auth-brand">
             <span class="brand-icon">Q</span>
             <span>Quick Note</span>
-        </a>
-
-        <span class="nav-label">YOUR PERSONAL WORKSPACE</span>
-    </header>
-
-    <main class="container">
-
-        <!-- Hero Section -->
-        <section class="hero">
-            <div>
-                <span class="eyebrow">YOUR SPACE. YOUR THOUGHTS.</span>
-                <h1>Capture your thoughts<span>.</span></h1>
-                <p>A simple place to write, organize and remember everything.</p>
-            </div>
-
-            <div class="notes-counter">
-                <span id="note-count">0</span>
-                <span>Saved Notes</span>
-            </div>
-        </section>
-
-        <!-- Create Note -->
-        <section class="composer">
-
-            <div class="section-heading">
-                <h2>Create a note</h2>
-                <p>What's on your mind today?</p>
-            </div>
-
-            <form id="note-form">
-
-                <input type="text" id="note-title" placeholder="Give your note a title..." maxlength="100" required>
-
-                <textarea id="note-content" placeholder="Start writing your thoughts here..." rows="4"
-                    maxlength="2000"></textarea>
-
-                <div class="form-footer">
-                    <span class="hint">
-                        Keep your thoughts safe and organized.
-                    </span>
-
-                    <button type="submit" id="save-button">
-                        <span>+</span> Save Note
-                    </button>
-                </div>
-
-            </form>
-        </section>
-
-        <!-- Notes Section -->
-        <section class="notes-section">
-
-            <div class="notes-toolbar">
-                <div>
-                    <h2>Your Notes</h2>
-                    <p>Everything you've saved in one place.</p>
-                </div>
-
-                <input type="search" id="search-input" placeholder="Search notes..." aria-label="Search notes">
-            </div>
-
-            <div id="notes-grid" class="notes-grid" aria-live="polite">
-                <p class="loading-state">Loading your notes...</p>
-            </div>
-
-        </section>
-
-    </main>
-
-    <!-- VIEW NOTE DIALOG - READ ONLY -->
-    <dialog id="view-dialog" class="view-dialog">
-
-        <div class="view-container">
-
-            <div class="view-header">
-
-                <div class="view-brand">
-                    <span class="view-brand-icon">Q</span>
-                    <span>MY PERSONAL NOTE</span>
-                </div>
-
-                <button type="button" id="close-view" class="close-dialog" aria-label="Close note view">
-                    &times;
-                </button>
-
-            </div>
-
-            <div class="view-body">
-
-                <span class="view-label">NOTE DETAILS</span>
-
-                <h1 id="view-title">Note Title</h1>
-
-                <div class="view-metadata">
-
-                    <div class="metadata-item">
-                        <span>CREATED</span>
-                        <p id="view-created"></p>
-                    </div>
-
-                    <div class="metadata-item">
-                        <span>LAST UPDATED</span>
-                        <p id="view-updated"></p>
-                    </div>
-
-                </div>
-
-                <div class="view-divider"></div>
-
-                <div class="view-content-section">
-
-                    <h3>Your Thoughts</h3>
-
-                    <div id="view-content" class="view-content"></div>
-
-                </div>
-
-            </div>
-
-            <div class="view-footer">
-                <span>YOUR SPACE. YOUR THOUGHTS.</span>
-
-                <button type="button" id="view-done" class="view-done">
-                    Close Note
-                </button>
-            </div>
-
         </div>
 
-    </dialog>
+        <div class="auth-card">
+            <div class="auth-heading">
+                <span class="eyebrow">YOUR SPACE. YOUR THOUGHTS.</span>
+                <h1 id="auth-title">Welcome back.</h1>
+                <p id="auth-subtitle">Sign in to access your personal workspace.</p>
+            </div>
 
-    <!-- EDIT NOTE DIALOG -->
-    <dialog id="edit-dialog" class="edit-dialog">
+            <div class="auth-tabs">
+                <button type="button" id="login-tab" class="auth-tab active">
+                    Login
+                </button>
+                <button type="button" id="register-tab" class="auth-tab">
+                    Create Account
+                </button>
+            </div>
 
-        <form id="edit-form" class="edit-form">
-
-            <div class="dialog-heading">
-
-                <div>
-                    <h2>Edit Note</h2>
-                    <p>Make changes to your saved note.</p>
+            <form id="auth-form">
+                <div class="auth-field">
+                    <label for="auth-email">Email Address</label>
+                    <input type="email" id="auth-email" placeholder="you@example.com" maxlength="255"
+                        autocomplete="email" required>
                 </div>
 
-                <button type="button" id="cancel-edit-icon" class="close-dialog" aria-label="Close edit dialog">
-                    &times;
-                </button>
+                <div class="auth-field">
+                    <label for="auth-password">Password</label>
+                    <input type="password" id="auth-password" placeholder="Enter your password" minlength="10"
+                        maxlength="72" autocomplete="current-password" required>
+                </div>
 
+                <p id="password-hint" class="password-hint">
+                    Use at least 10 characters.
+                </p>
+
+                <button type="submit" id="auth-submit" class="primary-button">
+                    Login to Workspace
+                </button>
+            </form>
+
+            <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
+
+            <div class="auth-security">
+                <span>🔒</span>
+                Your notes are private to your account.
             </div>
+        </div>
 
-            <label for="edit-title">Note Title</label>
+        <footer>Made with care. <strong>Quick Note</strong></footer>
+    </section>
 
-            <input type="text" id="edit-title" maxlength="100" required>
+    <!-- PRIVATE DASHBOARD -->
+    <div id="dashboard" class="dashboard hidden">
 
-            <label for="edit-content">Note Content</label>
+        <header class="navbar">
+            <a href="/" class="brand">
+                <span class="brand-icon">Q</span>
+                <span>Quick Note</span>
+            </a>
 
-            <textarea id="edit-content" rows="7" maxlength="2000"></textarea>
-
-            <div class="edit-actions">
-
-                <button type="button" id="cancel-edit" class="cancel-button">
-                    Cancel
+            <div class="account-area">
+                <div class="account-details">
+                    <span class="account-label">PERSONAL WORKSPACE</span>
+                    <span id="user-email" class="account-email"></span>
+                </div>
+                <button type="button" id="logout-button" class="logout-button">
+                    Logout
                 </button>
-
-                <button type="submit" id="update-button" class="update-button">
-                    Save Changes
-                </button>
-
             </div>
+        </header>
 
-        </form>
+        <main class="container">
 
-    </dialog>
+            <section class="hero">
+                <div>
+                    <span class="eyebrow">YOUR SPACE. YOUR THOUGHTS.</span>
+                    <h1>Capture your thoughts<span>.</span></h1>
+                    <p>A private place to write, organize and remember everything.</p>
+                </div>
 
-    <!-- Notification -->
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+                <div class="notes-counter">
+                    <span id="note-count">0</span>
+                    <span>Saved Notes</span>
+                </div>
+            </section>
 
-    <!-- Footer -->
-    <footer>
-        Made with care. <strong>Quick Note</strong>
-    </footer>
+            <!-- CREATE NOTE -->
+            <section class="composer">
+                <div class="section-heading">
+                    <h2>Create a note</h2>
+                    <p>What's on your mind today?</p>
+                </div>
+
+                <form id="note-form">
+                    <input type="text" id="note-title" placeholder="Give your note a title..." maxlength="150" required>
+
+                    <textarea id="note-content" placeholder="Start writing your thoughts here..." rows="4"
+                        maxlength="50000"></textarea>
+
+                    <div class="form-footer">
+                        <span class="hint">Your notes are saved privately to your account.</span>
+                        <button type="submit" id="save-button">
+                            <span>+</span> Save Note
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- NOTES -->
+            <section class="notes-section">
+                <div class="notes-toolbar">
+                    <div>
+                        <h2>Your Notes</h2>
+                        <p>Everything you've saved in one place.</p>
+                    </div>
+
+                    <input type="search" id="search-input" placeholder="Search notes..." aria-label="Search notes">
+                </div>
+
+                <div id="notes-grid" class="notes-grid" aria-live="polite">
+                    <p class="loading-state">Loading your notes...</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- READ-ONLY VIEW -->
+        <dialog id="view-dialog" class="view-dialog">
+            <div class="view-container">
+                <div class="view-header">
+                    <div class="view-brand">
+                        <span class="view-brand-icon">Q</span>
+                        <span>MY PERSONAL NOTE</span>
+                    </div>
+                    <button type="button" id="close-view" class="close-dialog">×</button>
+                </div>
+
+                <div class="view-body">
+                    <span class="view-label">NOTE DETAILS</span>
+                    <h1 id="view-title"></h1>
+
+                    <div class="view-metadata">
+                        <div class="metadata-item">
+                            <span>CREATED</span>
+                            <p id="view-created"></p>
+                        </div>
+                        <div class="metadata-item">
+                            <span>LAST UPDATED</span>
+                            <p id="view-updated"></p>
+                        </div>
+                    </div>
+
+                    <div class="view-divider"></div>
+                    <div class="view-content-section">
+                        <h3>Your Thoughts</h3>
+                        <div id="view-content" class="view-content"></div>
+                    </div>
+                </div>
+
+                <div class="view-footer">
+                    <span>YOUR SPACE. YOUR THOUGHTS.</span>
+                    <button type="button" id="view-done" class="view-done">
+                        Close Note
+                    </button>
+                </div>
+            </div>
+        </dialog>
+
+        <!-- EDIT NOTE -->
+        <dialog id="edit-dialog" class="edit-dialog">
+            <form id="edit-form" class="edit-form">
+                <div class="dialog-heading">
+                    <div>
+                        <h2>Edit Note</h2>
+                        <p>Make changes to your saved note.</p>
+                    </div>
+                    <button type="button" id="cancel-edit-icon" class="close-dialog">×</button>
+                </div>
+
+                <label for="edit-title">Note Title</label>
+                <input type="text" id="edit-title" maxlength="150" required>
+
+                <label for="edit-content">Note Content</label>
+                <textarea id="edit-content" rows="7" maxlength="50000"></textarea>
+
+                <div class="edit-actions">
+                    <button type="button" id="cancel-edit" class="cancel-button">
+                        Cancel
+                    </button>
+                    <button type="submit" id="update-button" class="update-button">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </dialog>
+
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+        <footer>Made with care. <strong>Quick Note</strong></footer>
+    </div>
 
 </body>
 

@@ -1,30 +1,172 @@
 
+require("dotenv").config();
+
 const express = require("express");
 const path = require("path");
+const helmet = require("helmet");
+
+const {
+    pool,
+    initializeDatabase,
+    checkDatabase
+} = require("./db");
+
+const {
+    router: authRouter,
+    sessionMiddleware
+} = require("./routes/auth");
+
+const notesRouter = require("./routes/notes");
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
+const production = process.env.NODE_ENV === "production";
 
-// Middleware
-app.use(express.json({ limit: "20kb" }));
+if (
+    !process.env.SESSION_SECRET ||
+    Buffer.byteLength(process.env.SESSION_SECRET, "utf8") < 32
+) {
+    throw new Error("SESSION_SECRET must contain at least 32 bytes.");
+}
 
-// Health check API
-app.get("/api/health", (req, res) => {
-    res.status(200).json({
-        status: "OK",
-        message: "Quick Note API is running"
-    });
+if (production) {
+    if (!process.env.APP_ORIGIN) {
+        throw new Error("APP_ORIGIN is required in production.");
+    }
+
+    try {
+        const parsed = new URL(process.env.APP_ORIGIN);
+
+        if (parsed.protocol !== "https:" || parsed.origin !== process.env.APP_ORIGIN) {
+            throw new Error("APP_ORIGIN must be an HTTPS origin without a trailing path.");
+        }
+    } catch (error) {
+        throw new Error(`Invalid APP_ORIGIN: ${error.message}`);
+    }
+
+    app.set("trust proxy", 1);
+}
+
+// SECURITY HEADERS
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'"],
+            imgSrc: ["'self'", "data:"],
+            connectSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            frameAncestors: ["'none'"]
+        }
+    }
+}));
+
+// REQUEST BODY
+app.use(express.json({ limit: "100kb" }));
+app.use(express.urlencoded({
+    extended: false,
+    limit: "100kb"
+}));
+
+// DISABLE CACHING OF PRIVATE APPLICATION DATA
+app.use(["/api/auth", "/notes"], (req, res, next) => {
+    res.setHeader("Cache-Control", "private, no-store");
+    next();
 });
 
-// Notes REST API
-app.use("/notes", require("./routes/notes"));
+// SESSION MANAGEMENT
+app.use(sessionMiddleware);
 
-// Serve frontend files
+// CSRF ORIGIN CHECK
+// Browser state-changing requests must originate from our application.
+app.use((req, res, next) => {
+    const safeMethods = ["GET", "HEAD", "OPTIONS"];
+
+    if (safeMethods.includes(req.method)) {
+        return next();
+    }
+
+    const origin = req.get("Origin");
+
+    // Non-browser tools such as PowerShell may omit Origin.
+    if (!origin) {
+        return next();
+    }
+
+    try {
+        const allowedOrigin = production
+            ? process.env.APP_ORIGIN
+            : `${req.protocol}://${req.get("host")}`;
+
+        if (new URL(origin).origin !== new URL(allowedOrigin).origin) {
+            return res.status(403).json({
+                error: "Cross-origin request blocked."
+            });
+        }
+
+        next();
+
+    } catch {
+        res.status(403).json({
+            error: "Invalid request origin."
+        });
+    }
+});
+
+// API ROUTES
+app.use("/api/auth", authRouter);
+app.use("/notes", notesRouter);
+
+// HEALTH CHECK
+app.get("/api/health", async (req, res) => {
+    try {
+        const database = await checkDatabase();
+
+        res.status(200).json({
+            status: "OK",
+            database: "connected",
+            timestamp: database.database_time
+        });
+
+    } catch (error) {
+        console.error("Database health check failed:", error.message);
+
+        res.status(503).json({
+            status: "ERROR",
+            database: "disconnected"
+        });
+    }
+});
+
+// FRONTEND
 app.use(express.static(path.join(__dirname, "../frontend")));
 
-// Handle invalid JSON and server errors
+// API 404
+app.use((req, res, next) => {
+    if (req.path.startsWith("/api/") || req.path.startsWith("/notes")) {
+        return res.status(404).json({
+            error: "API endpoint not found."
+        });
+    }
+
+    next();
+});
+
+// PAGE 404
+app.use((req, res) => {
+    res.status(404).send("Page not found.");
+});
+
+// ERROR HANDLER
 app.use((error, req, res, next) => {
-    console.error("Server error:", error);
+    console.error("Application error:", error);
+
+    if (res.headersSent) {
+        return next(error);
+    }
 
     if (error instanceof SyntaxError && error.status === 400) {
         return res.status(400).json({
@@ -33,17 +175,46 @@ app.use((error, req, res, next) => {
     }
 
     res.status(500).json({
-        error: "Internal server error."
+        error: "An unexpected server error occurred."
     });
 });
 
-// Start Express server
-app.listen(PORT, () => {
-    console.log("--------------------------------");
-    console.log("       QUICK NOTE SERVER");
-    console.log("--------------------------------");
-    console.log(`Server running: http://localhost:${PORT}`);
-    console.log(`Health API: http://localhost:${PORT}/api/health`);
-    console.log(`Notes API: http://localhost:${PORT}/notes`);
-    console.log("--------------------------------");
-});
+// SERVER STARTUP
+async function startServer() {
+    try {
+        await initializeDatabase();
+        await checkDatabase();
+
+        const server = app.listen(PORT, "0.0.0.0", () => {
+            console.log("--------------------------------");
+            console.log("       QUICK NOTE 2.0");
+            console.log("--------------------------------");
+            console.log(`Server running on port ${PORT}`);
+            console.log("PostgreSQL connected.");
+            console.log("Authentication enabled.");
+            console.log("Private note workspaces enabled.");
+            console.log("--------------------------------");
+        });
+
+        async function shutdown(signal) {
+            console.log(`${signal}: shutting down...`);
+
+            server.close(async () => {
+                await pool.end();
+                process.exit(0);
+            });
+
+            setTimeout(() => process.exit(1), 10000).unref();
+        }
+
+        process.on("SIGINT", () => shutdown("SIGINT"));
+        process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+    } catch (error) {
+        console.error("Startup failed:", error);
+        await pool.end();
+        process.exit(1);
+    }
+}
+
+startServer();
